@@ -94,6 +94,11 @@ public class ProductFile implements DataSource{
         file.close();
     }
 
+    public boolean clear()throws IOException{ 
+        file.setLength(0);
+        return true;
+    }
+
     //Pomocne metody
     private Product read() throws IOException{
         byte[] buffer = new byte[Product.NAME_SIZE];
@@ -113,9 +118,6 @@ public class ProductFile implements DataSource{
         return true;
     }
 
-    public boolean clear()throws IOException{ 
-        file.setLength(0);
-        return true;
-    }
+
 
 }

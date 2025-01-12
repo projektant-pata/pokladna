@@ -4,8 +4,10 @@ import javax.swing.*;
 import data.Product;
 import fileManagers.ProductFile;
 import java.awt.*;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.io.File;
 
 public class MainFrame extends JFrame {
     private int i = 0;
@@ -14,6 +16,7 @@ public class MainFrame extends JFrame {
     private JPanel topPanel, productsPanel, rightPanel, cartPanel;
     private JButton addProductButton, addBillButton, cancelBillButton, showReceiptButton;
     private JList<String> receiptList;
+    GradientPaint gradient = new GradientPaint(0, 0, Color.BLUE, getWidth(), getHeight(), Color.GREEN);
 
     public MainFrame() {
         // Inicializace správce souborů
@@ -21,7 +24,8 @@ public class MainFrame extends JFrame {
             pf = new ProductFile("/home/patrik/javaprograms/pokladna/pokladna/src/files/products.dat");
             products = pf.getAll();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba",
+                    JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
 
@@ -47,6 +51,7 @@ public class MainFrame extends JFrame {
         add(topPanel, BorderLayout.NORTH);
         add(new JScrollPane(productsPanel), BorderLayout.WEST);
         add(rightPanel, BorderLayout.EAST);
+        refreshRecipes();
     }
 
     /**
@@ -67,6 +72,7 @@ public class MainFrame extends JFrame {
         // Akce pro tlačítko "Přidat produkt"
         addProductButton.addActionListener(e -> addNewProduct());
         addBillButton.addActionListener(e -> addNewReceipt());
+        cancelBillButton.addActionListener(e -> cancelNewReceipt());
 
         // Akce pro tlačítko "Zobraz účtenku"
         showReceiptButton.addActionListener(e -> {
@@ -74,7 +80,8 @@ public class MainFrame extends JFrame {
             if (selectedReceipt != null) {
                 showReceiptDetails(selectedReceipt);
             } else {
-                JOptionPane.showMessageDialog(this, "Žádná účtenka není vybrána!", "Chyba", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Žádná účtenka není vybrána!", "Chyba",
+                        JOptionPane.WARNING_MESSAGE);
             }
         });
     }
@@ -140,20 +147,20 @@ public class MainFrame extends JFrame {
     private void addToCart(Product product) {
         // Přidá název produktu do seznamu položek košíku
         cartItems.add(product);
-    
+
         // Aktualizuje zobrazení košíku
         updateCartDisplay();
     }
 
     private void updateCartDisplay() {
         cartPanel.removeAll(); // Smaže všechny existující položky z košíku
-    
+
         // Projde seznam položek v košíku a přidá je do panelu
         for (Product item : cartItems) {
             JLabel cartItemLabel = new JLabel(item.getName() + " " + item.getPrice() + " Kč");
             cartPanel.add(cartItemLabel);
         }
-    
+
         // Obnoví rozložení panelu košíku
         cartPanel.revalidate();
         cartPanel.repaint();
@@ -167,8 +174,8 @@ public class MainFrame extends JFrame {
         JTextField priceField = new JTextField();
 
         Object[] message = {
-            "Název produktu:", nameField,
-            "Cena produktu:", priceField
+                "Název produktu:", nameField,
+                "Cena produktu:", priceField
         };
 
         int option = JOptionPane.showConfirmDialog(this, message, "Přidat nový produkt", JOptionPane.OK_CANCEL_OPTION);
@@ -192,20 +199,26 @@ public class MainFrame extends JFrame {
             } catch (IllegalArgumentException e) {
                 JOptionPane.showMessageDialog(this, e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
             } catch (Exception e) {
-                JOptionPane.showMessageDialog(this, "Chyba při ukládání produktu: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Chyba při ukládání produktu: " + e.getMessage(), "Chyba",
+                        JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    private void addNewReceipt(){
+    private void addNewReceipt() {
         ProductFile pepik;
         try {
-            pepik = new ProductFile("/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/receipt" + i + ".dat");
+            pepik = new ProductFile(
+                    "/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/receipt" + i + ".dat");
             i++;
-            if (i >= 10) 
+            if (i >= 10)
                 i = 0;
-            
+
             pepik.clear();
+            if (cartItems.isEmpty())
+                JOptionPane.showMessageDialog(this, "Nic neni v kosiku", "Chyba",
+                        JOptionPane.ERROR_MESSAGE);
+
             for (Product product : cartItems) {
                 pepik.save(product);
             }
@@ -213,32 +226,98 @@ public class MainFrame extends JFrame {
             updateCartDisplay();
             pepik.close();
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba",
+                    JOptionPane.ERROR_MESSAGE);
             System.exit(1);
-        }        
-        
+        }
+        refreshRecipes();
+    }
+
+    private void cancelNewReceipt() {
+        cartItems.clear();
+        updateCartDisplay();
+    }
+
+    private void refreshRecipes() {
+        File receiptsDir = new File("/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts");
+        File[] files = receiptsDir.listFiles((dir, name) -> name.startsWith("receipt") && name.endsWith(".dat"));
+
+        // Seznam názvů účtenek
+        List<String> receiptNames = new ArrayList<>();
+
+        for (File file : files) {
+            receiptNames.add(file.getName()); // Přidáme název souboru
+        }
+
+        // Seřadíme názvy souborů podle abecedy
+        receiptNames.sort(String::compareTo);
+
+        // Aktualizujeme JList s novými účtenkami
+        receiptList.setListData(receiptNames.toArray(new String[0]));
     }
 
     /**
      * Zobrazí detaily vybrané účtenky v dialogovém okně
      */
     private void showReceiptDetails(String receiptName) {
-        JDialog receiptDialog = new JDialog(this, "Detail " + receiptName, true);
-        receiptDialog.setSize(400, 300);
-        receiptDialog.setLayout(new BorderLayout());
-        receiptDialog.setLocationRelativeTo(this);
+        try {
+            // Načtení produktů z účtenky
+            ProductFile rf = new ProductFile(
+                    "/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/" + receiptName);
+            List<Product> receiptProducts = rf.getAll();
+            int ultimatePrice = 0;
+            // Vytvoření dialogového okna
+            JDialog receiptDialog = new JDialog(this, "Detail " + receiptName, true);
+            receiptDialog.setSize(400, 300);
+            receiptDialog.setLayout(new BorderLayout());
+            receiptDialog.setLocationRelativeTo(this);
 
-        JTextArea receiptDetails = new JTextArea();
-        receiptDetails.setText("Detaily " + receiptName + ":\n\n- Produkt A\n- Produkt B\n- Produkt C");
-        receiptDetails.setEditable(false);
+            // Panel pro detaily účtenky
+            JPanel receiptPanel = new JPanel();
+            receiptPanel.setLayout(new BoxLayout(receiptPanel, BoxLayout.Y_AXIS)); // Seznam produktů pod sebou
 
-        receiptDialog.add(new JScrollPane(receiptDetails), BorderLayout.CENTER);
+            // Přidání produktů do panelu
+            for (Product product : receiptProducts) {
+                JPanel productPanel = new JPanel();
+                productPanel.setLayout(new BorderLayout());
 
-        JButton closeButton = new JButton("Zavřít");
-        closeButton.addActionListener(e -> receiptDialog.dispose());
-        receiptDialog.add(closeButton, BorderLayout.SOUTH);
+                JLabel productNameLabel = new JLabel(product.getName());
+                productNameLabel.setHorizontalAlignment(SwingConstants.LEFT); // Zarovnáno vlevo
+                JLabel productPriceLabel = new JLabel(product.getPrice() + " Kč");
+                productPriceLabel.setHorizontalAlignment(SwingConstants.RIGHT); // Zarovnáno vpravo
 
-        receiptDialog.setVisible(true);
+                productPanel.add(productNameLabel, BorderLayout.WEST);
+                productPanel.add(productPriceLabel, BorderLayout.EAST);
+
+                receiptPanel.add(productPanel);
+                ultimatePrice += product.getPrice();
+            }
+            JPanel productPanel = new JPanel();
+            productPanel.setLayout(new BorderLayout());
+            JLabel productNameLabel = new JLabel("Celková cena");
+            JLabel productPriceLabel = new JLabel(String.valueOf(ultimatePrice) + " Kč");
+            productPanel.add(productNameLabel, BorderLayout.WEST);
+            productPanel.add(productPriceLabel, BorderLayout.EAST);
+
+            receiptPanel.add(productPanel);
+
+
+            // Přidání scroll panelu
+            JScrollPane receiptScrollPane = new JScrollPane(receiptPanel);
+            receiptDialog.add(receiptScrollPane, BorderLayout.CENTER);
+
+            // Tlačítko pro zavření dialogu
+            JButton closeButton = new JButton("Zavřít");
+            closeButton.addActionListener(e -> receiptDialog.dispose());
+            receiptDialog.add(closeButton, BorderLayout.SOUTH);
+
+            receiptDialog.setVisible(true);
+            rf.close();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba",
+                    JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
     }
 
     /**
