@@ -10,8 +10,7 @@ import java.util.List;
 public class MainFrame extends JFrame {
     private int i = 0;
     private ProductFile pf;
-    private List<Product> products;
-    private ArrayList<String> cartItems = new ArrayList<>();
+    private List<Product> products, cartItems;
     private JPanel topPanel, productsPanel, rightPanel, cartPanel;
     private JButton addProductButton, addBillButton, cancelBillButton, showReceiptButton;
     private JList<String> receiptList;
@@ -25,6 +24,8 @@ public class MainFrame extends JFrame {
             JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
         }
+
+        cartItems = new ArrayList<Product>();
 
         // Nastavení hlavního okna
         setTitle("Pokladní systém");
@@ -138,7 +139,7 @@ public class MainFrame extends JFrame {
 
     private void addToCart(Product product) {
         // Přidá název produktu do seznamu položek košíku
-        cartItems.add(product.getName() + " (" + product.getPrice() + " Kč)");
+        cartItems.add(product);
     
         // Aktualizuje zobrazení košíku
         updateCartDisplay();
@@ -148,8 +149,8 @@ public class MainFrame extends JFrame {
         cartPanel.removeAll(); // Smaže všechny existující položky z košíku
     
         // Projde seznam položek v košíku a přidá je do panelu
-        for (String item : cartItems) {
-            JLabel cartItemLabel = new JLabel(item);
+        for (Product item : cartItems) {
+            JLabel cartItemLabel = new JLabel(item.getName() + " " + item.getPrice() + " Kč");
             cartPanel.add(cartItemLabel);
         }
     
@@ -199,11 +200,17 @@ public class MainFrame extends JFrame {
     private void addNewReceipt(){
         ProductFile pepik;
         try {
-            pepik = new ProductFile("/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/receipt0.dat");
-            products = pepik.getAll();
-            for (Product product : products) {
+            pepik = new ProductFile("/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/receipt" + i + ".dat");
+            i++;
+            if (i >= 10) 
+                i = 0;
+            
+            pepik.clear();
+            for (Product product : cartItems) {
                 pepik.save(product);
             }
+            cartItems.clear();
+            updateCartDisplay();
             pepik.close();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);

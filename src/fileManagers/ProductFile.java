@@ -1,5 +1,6 @@
 package fileManagers;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -109,6 +110,11 @@ public class ProductFile implements DataSource{
         file.write(Arrays.copyOf(product.getName().getBytes(CHARSET), Product.NAME_SIZE));
         file.writeShort(product.getPrice());
         
+        return true;
+    }
+
+    public boolean clear()throws IOException{ 
+        file.setLength(0);
         return true;
     }
 
