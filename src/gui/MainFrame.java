@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainFrame extends JFrame {
-    private ProductFile productFile;
+    private int i = 0;
+    private ProductFile pf;
     private List<Product> products;
     private ArrayList<String> cartItems = new ArrayList<>();
     private JPanel topPanel, productsPanel, rightPanel, cartPanel;
@@ -18,8 +19,8 @@ public class MainFrame extends JFrame {
     public MainFrame() {
         // Inicializace správce souborů
         try {
-            productFile = new ProductFile();
-            products = productFile.getAll();
+            pf = new ProductFile("/home/patrik/javaprograms/pokladna/pokladna/src/files/products.dat");
+            products = pf.getAll();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
             System.exit(1);
@@ -64,7 +65,7 @@ public class MainFrame extends JFrame {
 
         // Akce pro tlačítko "Přidat produkt"
         addProductButton.addActionListener(e -> addNewProduct());
-        addBillButton.addActionListener(e -> addNewProduct());
+        addBillButton.addActionListener(e -> addNewReceipt());
 
         // Akce pro tlačítko "Zobraz účtenku"
         showReceiptButton.addActionListener(e -> {
@@ -183,7 +184,7 @@ public class MainFrame extends JFrame {
                 newProduct.setName(name);
                 newProduct.setPrice(price);
                 products.add(newProduct);
-                productFile.save(newProduct); // Uloží produkt do souboru
+                pf.save(newProduct); // Uloží produkt do souboru
                 loadProducts(); // Aktualizuje zobrazení
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "Cena musí být číslo!", "Chyba", JOptionPane.ERROR_MESSAGE);
@@ -193,6 +194,22 @@ public class MainFrame extends JFrame {
                 JOptionPane.showMessageDialog(this, "Chyba při ukládání produktu: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private void addNewReceipt(){
+        ProductFile pepik;
+        try {
+            pepik = new ProductFile("/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/receipt0.dat");
+            products = pepik.getAll();
+            for (Product product : products) {
+                pepik.save(product);
+            }
+            pepik.close();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }        
+        
     }
 
     /**

@@ -9,21 +9,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import data.DataSource;
 import data.Product;
 import data.SourceException;
 
-public class ProductFile {
+public class ProductFile implements DataSource{
     private RandomAccessFile file;
     private final Charset CHARSET = StandardCharsets.UTF_8;
 
-    public ProductFile() throws SourceException{
+    public ProductFile(String path) throws SourceException{
         try {
-            file = new RandomAccessFile("/home/patrik/javaprograms/pokladna/pokladna/src/files/products.dat", "rw");
+            file = new RandomAccessFile(path, "rw");
         } catch (FileNotFoundException e) {
          throw new SourceException(e.getMessage(), e);
         }
     }
 
+    @Override
     public List<Product> getAll(){
         List<Product> list = new ArrayList<>();
 
@@ -41,6 +43,7 @@ public class ProductFile {
         }
     }
 
+    @Override
     public Product get(int index){
         try{
             if (index * Product.DATA_SIZE >= file.length()) 
@@ -54,6 +57,7 @@ public class ProductFile {
         }
     }
 
+    @Override
     public boolean save(Product product){
         try{
             file.seek(file.length());
@@ -64,7 +68,7 @@ public class ProductFile {
             return false;
         }
     } 
-
+    @Override
     public boolean remove(int index){
         try{
             if (index * Product.DATA_SIZE >= file.length()) 
@@ -107,4 +111,5 @@ public class ProductFile {
         
         return true;
     }
+
 }
