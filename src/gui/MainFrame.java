@@ -5,6 +5,9 @@ import javax.swing.border.Border;
 
 import data.Product;
 import fileManagers.ProductFile;
+import fileManagers.ProductsCSV;
+import fileManagers.ReceiptGenerator;
+
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
@@ -14,6 +17,7 @@ import java.io.File;
 public class MainFrame extends JFrame {
     private int i = 0;
     private ProductFile pf;
+    private ProductsCSV pc;
     private List<Product> products, cartItems;
     private JPanel topPanel, productsPanel, rightPanel, cartPanel;
     private JButton addProductButton, addBillButton, cancelBillButton, showReceiptButton;
@@ -24,7 +28,8 @@ public class MainFrame extends JFrame {
     public MainFrame() {
         try {
             pf = new ProductFile("/home/patrik/javaprograms/pokladna/pokladna/src/files/products.dat");
-            products = pf.getAll();
+            pc = new ProductsCSV();
+            products = pc.read();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba",
                     JOptionPane.ERROR_MESSAGE);
@@ -110,7 +115,7 @@ public class MainFrame extends JFrame {
                 newProduct.setName(name);
                 newProduct.setPrice(price);
                 products.add(newProduct);
-                pf.save(newProduct);
+                pc.write(newProduct);
                 loadProducts();
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "Cena musí být číslo!", "Chyba", JOptionPane.ERROR_MESSAGE);
@@ -127,25 +132,29 @@ public class MainFrame extends JFrame {
      * tlacitko pridat objednavku
      */
     private void addNewReceipt() {
-        ProductFile pepik;
+        ProductFile mach;
+        ReceiptGenerator sebestova;
         try {
-            pepik = new ProductFile(
+            mach = new ProductFile(
                     "/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/receipt" + i + ".dat");
+            sebestova = new ReceiptGenerator(
+                    "/home/patrik/javaprograms/pokladna/pokladna/src/files/printedReceipts/prettyReceipt" + i + ".txt");
             i++;
             if (i >= 10)
                 i = 0;
 
-            pepik.clear();
+            mach.clear();
             if (cartItems.isEmpty())
                 JOptionPane.showMessageDialog(this, "Nic neni v kosiku", "Chyba",
                         JOptionPane.ERROR_MESSAGE);
 
             for (Product product : cartItems) {
-                pepik.save(product);
+                mach.save(product);
             }
+            sebestova.generateReceipt(cartItems);
             cartItems.clear();
             updateCartDisplay();
-            pepik.close();
+            mach.close();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba",
                     JOptionPane.ERROR_MESSAGE);
@@ -235,18 +244,18 @@ public class MainFrame extends JFrame {
     private void loadProducts() {
         productsPanel.removeAll();
         productsPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10)); // Vodorovné uspořádání s mezerami
-    
+
         for (Product product : products) {
             String buttonText = String.format("<html>%s<br>%d Kč</html>", product.getName(), product.getPrice());
-    
+
             // Vytvoření tlačítka s pevnými rozměry
             JButton productButton = new JButton(buttonText);
             productButton.setPreferredSize(new Dimension(120, 120)); // Pevná šířka a výška tlačítek
             productButton.addActionListener(e -> addToCart(product));
-    
+
             productsPanel.add(productButton); // Přidání tlačítka do panelu
         }
-    
+
         productsPanel.revalidate();
         productsPanel.repaint();
     }
@@ -288,11 +297,9 @@ public class MainFrame extends JFrame {
         receiptList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
         receiptList.setBackground(Color.magenta);
 
-
-
         // Inicializace
         rightPanel = new JPanel();
-        rightPanel.setPreferredSize(new Dimension(200, getHeight()/2));
+        rightPanel.setPreferredSize(new Dimension(200, getHeight() / 2));
         rightPanel.setLayout(new BorderLayout());
         rightPanel.add(cartScrollPane, BorderLayout.NORTH);
         rightPanel.add(receiptList, BorderLayout.SOUTH);
