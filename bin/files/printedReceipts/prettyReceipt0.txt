@@ -6,13 +6,15 @@
 Produkt                    Cena (Kč)
 -------------------------------------
 Frgál                          70.00
-Frgál                          70.00
-Frgál                          70.00
-Frgál                          70.00
-Frgál                          70.00
-Frgál                          70.00
+Bramborový salát               80.00
+Bramborový salát               80.00
+Bramborový salát               80.00
+Bramborový salát               80.00
+Bramborový salát               80.00
+Bramborový salát               80.00
+Bramborový salát               80.00
 -------------------------------------
-CELKEM:                       420.00
+CELKEM:                       630.00
 =====================================
       Děkujeme za váš nákup!         
 =====================================

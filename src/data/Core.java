@@ -1,17 +1,23 @@
+package data;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.swing.JOptionPane;
 
-import data.Product;
-import data.SourceException;
 import fileManagers.*;
 
 public class Core {
     private int i = 0;
     private ProductsCSV pc;
     private List<Product> cartItems;
+
+    public Core() {
+        pc = new ProductsCSV();
+        cartItems = new ArrayList<>();
+
+    }
 
     public int getI() {
         return i;
@@ -21,18 +27,20 @@ public class Core {
         return pc.read();
     }
 
-    public boolean addProduct(Product product) {
+    public void addProduct(Product product) {
         pc.write(product);
-        return true;
     }
 
     public List<Product> getCartItems() {
         return cartItems;
     }
 
-    public boolean addCartItem(Product product) {
+    public void addCartItem(Product product) {
         cartItems.add(product);
-        return true;
+    }
+
+    public void clearCart() {
+        cartItems.clear();
     }
 
     public List<String> getReceipts() throws SourceException {
@@ -42,13 +50,23 @@ public class Core {
 
             List<String> receiptNames = new ArrayList<>();
 
-            for (File file : files) {
+            for (File file : files)
                 receiptNames.add(file.getName());
-            }
 
             receiptNames.sort(String::compareTo);
-
             return receiptNames;
+        } catch (Exception e) {
+            throw new SourceException(e.getMessage(), e);
+        }
+    }
+
+    public List<Product> showReceipt(String receiptName) throws SourceException {
+        try {
+            ProductFile rf = new ProductFile(
+                    "/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/" + receiptName);
+            List<Product> receiptProducts = rf.getAll();
+            rf.close();
+            return receiptProducts;
         } catch (Exception e) {
             throw new SourceException(e.getMessage(), e);
         }
@@ -63,18 +81,17 @@ public class Core {
             ReceiptGenerator sebestova = new ReceiptGenerator(
                     "/home/patrik/javaprograms/pokladna/pokladna/src/files/printedReceipts/prettyReceipt" + i + ".txt");
 
-            i++;
-            if (i >= 10)
-                i = 0;
-
             mach.clear();
             for (Product product : cartItems)
                 mach.save(product);
 
-            sebestova.generateReceipt(cartItems);
-            cartItems.clear();
             mach.close();
 
+            sebestova.generateReceipt(cartItems);
+
+            cartItems.clear();
+
+            i = (i + 1) % 10;
         } catch (Exception e) {
             throw new SourceException(e.getMessage(), e);
         }

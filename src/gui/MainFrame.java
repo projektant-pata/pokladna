@@ -3,7 +3,9 @@ package gui;
 import javax.swing.*;
 import javax.swing.border.Border;
 
+import data.Core;
 import data.Product;
+import data.SourceException;
 import fileManagers.ProductFile;
 import fileManagers.ProductsCSV;
 import fileManagers.ReceiptGenerator;
@@ -15,9 +17,7 @@ import java.util.List;
 import java.io.File;
 
 public class MainFrame extends JFrame {
-    private int i = 0;
-    private ProductsCSV pc;
-    private List<Product> products, cartItems;
+    private Core core;
     private JPanel topPanel, productsPanel, rightPanel, cartPanel;
     private JButton addProductButton, addBillButton, cancelBillButton, showReceiptButton;
     private JList<String> receiptList;
@@ -25,17 +25,7 @@ public class MainFrame extends JFrame {
     Border border = BorderFactory.createLineBorder(Color.BLUE, 2);
 
     public MainFrame() {
-        try {
-            pc = new ProductsCSV();
-            products = pc.read();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba",
-                    JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
-
-        cartItems = new ArrayList<Product>();
-
+        core = new Core();
         // config okna
         setTitle("Pokladní systém");
         setSize(1000, 600);
@@ -52,6 +42,8 @@ public class MainFrame extends JFrame {
         add(topPanel, BorderLayout.NORTH);
         add(new JScrollPane(productsPanel), BorderLayout.WEST);
         add(rightPanel, BorderLayout.EAST);
+
+        loadProducts();
         refreshRecipes();
     }
 
@@ -112,8 +104,7 @@ public class MainFrame extends JFrame {
                 Product newProduct = new Product();
                 newProduct.setName(name);
                 newProduct.setPrice(price);
-                products.add(newProduct);
-                pc.write(newProduct);
+                core.addProduct(newProduct);
                 loadProducts();
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(this, "Cena musí být číslo!", "Chyba", JOptionPane.ERROR_MESSAGE);
@@ -129,43 +120,21 @@ public class MainFrame extends JFrame {
     /**
      * tlacitko pridat objednavku
      */
-    private void addNewReceipt() {
-        ProductFile mach;
-        ReceiptGenerator sebestova;
-        try {
-            mach = new ProductFile(
-                    "/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/receipt" + i + ".dat");
-            sebestova = new ReceiptGenerator(
-                    "/home/patrik/javaprograms/pokladna/pokladna/src/files/printedReceipts/prettyReceipt" + i + ".txt");
-            i++;
-            if (i >= 10)
-                i = 0;
-
-            mach.clear();
-            if (cartItems.isEmpty())
-                JOptionPane.showMessageDialog(this, "Nic neni v kosiku", "Chyba",
-                        JOptionPane.ERROR_MESSAGE);
-
-            for (Product product : cartItems) {
-                mach.save(product);
-            }
-            sebestova.generateReceipt(cartItems);
-            cartItems.clear();
-            updateCartDisplay();
-            mach.close();
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba",
-                    JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
+private void addNewReceipt() {
+    try {
+        core.saveReceipt();
         refreshRecipes();
+        updateCartDisplay();
+    } catch (SourceException e) {
+        JOptionPane.showMessageDialog(this, "Chyba při ukládání účtenky: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
     }
+}
 
     /**
      * tlacitko zrusit objednavku
      */
     private void cancelNewReceipt() {
-        cartItems.clear();
+        core.clearCart();
         updateCartDisplay();
     }
 
@@ -174,9 +143,7 @@ public class MainFrame extends JFrame {
      */
     private void showReceiptDetails(String receiptName) {
         try {
-            ProductFile rf = new ProductFile(
-                    "/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts/" + receiptName);
-            List<Product> receiptProducts = rf.getAll();
+            List<Product> receiptProducts = core.showReceipt(receiptName);
             int ultimatePrice = 0;
             JDialog receiptDialog = new JDialog(this, "Detail " + receiptName, true);
             receiptDialog.setSize(400, 300);
@@ -218,7 +185,6 @@ public class MainFrame extends JFrame {
             receiptDialog.add(closeButton, BorderLayout.SOUTH);
 
             receiptDialog.setVisible(true);
-            rf.close();
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Chyba při načítání souboru produktů: " + e.getMessage(), "Chyba",
                     JOptionPane.ERROR_MESSAGE);
@@ -242,6 +208,7 @@ public class MainFrame extends JFrame {
     private void loadProducts() {
         productsPanel.removeAll();
         productsPanel.setLayout(new FlowLayout(FlowLayout.LEFT, 10, 10)); // Vodorovné uspořádání s mezerami
+        List<Product> products = core.getProducts();
 
         for (Product product : products) {
             String buttonText = String.format("<html>%s<br>%d Kč</html>", product.getName(), product.getPrice());
@@ -259,13 +226,14 @@ public class MainFrame extends JFrame {
     }
 
     private void addToCart(Product product) {
-        cartItems.add(product);
+        core.addCartItem(product);
 
         updateCartDisplay();
     }
 
     private void updateCartDisplay() {
         cartPanel.removeAll();
+        List<Product> cartItems = core.getCartItems();
 
         for (Product item : cartItems) {
             JLabel cartItemLabel = new JLabel(item.getName() + " " + item.getPrice() + " Kč");
@@ -304,18 +272,11 @@ public class MainFrame extends JFrame {
     }
 
     private void refreshRecipes() {
-        File receiptsDir = new File("/home/patrik/javaprograms/pokladna/pokladna/src/files/receipts");
-        File[] files = receiptsDir.listFiles((dir, name) -> name.startsWith("receipt") && name.endsWith(".dat"));
-
-        List<String> receiptNames = new ArrayList<>();
-
-        for (File file : files) {
-            receiptNames.add(file.getName());
+        try {
+            receiptList.setListData(core.getReceipts().toArray(new String[0]));
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Chyba při načítání účtenek: " + e.getMessage(), "Chyba", JOptionPane.ERROR_MESSAGE);
         }
-
-        receiptNames.sort(String::compareTo);
-
-        receiptList.setListData(receiptNames.toArray(new String[0]));
     }
 
     /**
