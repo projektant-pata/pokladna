@@ -16,7 +16,6 @@ import java.io.File;
 
 public class MainFrame extends JFrame {
     private int i = 0;
-    private ProductFile pf;
     private ProductsCSV pc;
     private List<Product> products, cartItems;
     private JPanel topPanel, productsPanel, rightPanel, cartPanel;
@@ -27,7 +26,6 @@ public class MainFrame extends JFrame {
 
     public MainFrame() {
         try {
-            pf = new ProductFile("/home/patrik/javaprograms/pokladna/pokladna/src/files/products.dat");
             pc = new ProductsCSV();
             products = pc.read();
         } catch (Exception e) {

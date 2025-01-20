@@ -17,7 +17,7 @@ public class ReceiptGenerator {
             // Horní část účtenky
             writer.write("=====================================");
             writer.newLine();
-            writer.write("             MOJE PRODEJNA           ");
+            writer.write("              U Ahóje!               ");
             writer.newLine();
             writer.write("          Datum: 18.01.2025          ");
             writer.newLine();
